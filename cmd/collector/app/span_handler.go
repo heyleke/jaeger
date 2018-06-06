@@ -15,15 +15,18 @@
 package app
 
 import (
+	"fmt"
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 
 	zipkinS "github.com/jaegertracing/jaeger/cmd/collector/app/sanitizer/zipkin"
 	"github.com/jaegertracing/jaeger/model"
 	jConv "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
+	jsonConv "github.com/jaegertracing/jaeger/model/converter/json"
 	"github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/jaegertracing/jaeger/model/json"
 )
 
 const (
@@ -45,6 +48,7 @@ type ZipkinSpansHandler interface {
 type JaegerBatchesHandler interface {
 	// SubmitBatches records a batch of spans in Jaeger Thrift format
 	SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error)
+	SubmitBatchesJson(traces []*json.Trace) ([]*jaeger.BatchSubmitResponse, error)
 }
 
 // SpanProcessor handles model spans
@@ -64,6 +68,37 @@ func NewJaegerSpanHandler(logger *zap.Logger, modelProcessor SpanProcessor) Jaeg
 		logger:         logger,
 		modelProcessor: modelProcessor,
 	}
+}
+
+func (jbh *jaegerBatchesHandler) SubmitBatchesJson(traces []*json.Trace) ([]*jaeger.BatchSubmitResponse, error) {
+	responses := make([]*jaeger.BatchSubmitResponse, 0, len(traces))
+
+	for _, trace := range traces {
+		mSpans := make([]*model.Span, 0, len(trace.Spans))
+		for _, span := range trace.Spans {
+			my_process := make([]json.Process, 0 ,1 )
+			my_process = append(my_process, trace.Processes[span.ProcessID])
+			span.Process = &my_process[0]
+			mSpan, err := jsonConv.SpanToDomain(&span)
+			mSpans = append(mSpans, mSpan)
+		}
+		oks, err := jbh.modelProcessor.ProcessSpans(mSpans, JaegerFormatType)
+		if err != nil {
+		return nil, err
+		}
+		batchOk := true
+		for _, ok := range oks {
+			if !ok {
+				batchOk = false
+				break
+			}
+		}
+		res := &jaeger.BatchSubmitResponse{
+			Ok: batchOk,
+		}
+		responses = append(responses, res)
+	}
+	return responses, nil
 }
 
 func (jbh *jaegerBatchesHandler) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {

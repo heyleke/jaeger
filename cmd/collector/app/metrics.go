@@ -15,6 +15,7 @@
 package app
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/uber/jaeger-lib/metrics"
