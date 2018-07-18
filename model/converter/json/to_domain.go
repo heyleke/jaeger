@@ -46,9 +46,9 @@ func (td toDomain) spanToDomain(dbSpan *json.Span) (*model.Span, error) {
 		return nil, err
 	}
 	process, err := td.convertProcess(dbSpan.Process)
-	if err != nil {
-		return nil, err
-	}
+	//if err != nil {
+	//	return nil, err
+	//}
 	traceID, err := model.TraceIDFromString(string(dbSpan.TraceID))
 	if err != nil {
 		return nil, err
