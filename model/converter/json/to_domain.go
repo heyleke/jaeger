@@ -59,9 +59,9 @@ func (td toDomain) spanToDomain(dbSpan *json.Span) (*model.Span, error) {
 		return nil, err
 	}
 	parentSpanIDInt, err := model.SpanIDFromString(string(dbSpan.ParentSpanID))
-	if err != nil {
-		return nil, err
-	}
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	span := &model.Span{
 		TraceID:       traceID,
