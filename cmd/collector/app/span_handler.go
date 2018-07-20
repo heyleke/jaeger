@@ -79,7 +79,9 @@ func (jbh *jaegerBatchesHandler) SubmitBatchesJson(traces []*json.Trace) ([]*jae
 			my_process = append(my_process, trace.Processes[span.ProcessID])
 			span.Process = &my_process[0]
 			mSpan, err := jsonConv.SpanToDomain(&span)
-			mSpans = append(mSpans, mSpan)
+			if err == nil {
+				mSpans = append(mSpans, mSpan)
+			}
 		}
 		oks, err := jbh.modelProcessor.ProcessSpans(mSpans, JaegerFormatType)
 		if err != nil {
