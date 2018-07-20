@@ -15,7 +15,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 
